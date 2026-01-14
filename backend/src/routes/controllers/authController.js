@@ -29,18 +29,27 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Inside an async function
+// Use try/catch around sendMail to avoid crashing your server if the SMTP server is unreachable.
+async function sendEmail(mailOptions) {
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent!');
+  } catch (err) {
+    console.warn('Email send failed, ignoring in dev:', err.message);
+  }
+}
 
 
-// Google won't accept credentials from less secure apps anymore.
+// Example usage (test purposes, config for actual email later):
+const mailOptions = {
+  from: '"Housing Portal" <no-reply@bozemanhealth.org>',
+  to: 'test@example.com',
+  subject: 'Test email',
+  text: 'Hello world!'
+};
 
-// transporter.verify((error) => {
-//   if (error) {
-//     console.error('Email transporter error:', error);
-//   } else {
-//     console.log('Email transporter ready');
-//   }
-// });
-
+sendEmail(mailOptions);
 
 
 // @desc    Register new user
