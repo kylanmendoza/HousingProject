@@ -1,0 +1,89 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css"/> 
+    <title>Add Property</title>
+</head>
+<body>
+    <h1>Submit a Property Listing</h1>
+
+    <form id="propertyForm" enctype="multipart/form-data">
+        <label>Address:
+            <input type="text" name="address" required>
+        </label><br>
+
+        <label>Unit Number:
+            <input type="text" name="unitNumber" required>
+        </label><br>
+
+        <label>Bedrooms:
+            <input type="text" name="bedrooms" min="0" required />
+        </label><br>
+
+        <label>Bathrooms:
+            <input type="text" name="bathrooms" min="0" required />
+        </label><br>
+
+        <label>Square Footage:
+            <input type="text" name="squareFootage" min="0" />
+        </label><br>
+
+        <label>Rent ($):
+            <input type="text" name="rent" min="0" />
+        </label><br>
+
+        <label>Available:
+            <select name="available"></select>
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+        </label><br>
+
+        <label>Date Available
+            <input type="date" name="dateAvailable" />
+        </label><br>
+
+        <label>Assigned Employee ID
+            <input type="text" name="assignedEmployeeId" />
+        </label><br>
+
+        <label>Your Email (for approval notice)
+            <input type="text" name="submitterEmail" required />
+        </label><br>
+
+        <label>Amenities (comma separated)
+            <input type="text" name="amenities" placeholder="parking, pool, gym, etc.." />
+        </label><br>
+
+        <label>Images
+            <input type="file" name="images" multiple accept="'image/*" />
+        </label><br><br>
+
+
+        <button type="submit">Submit Property</button>
+    </form>
+    
+    <script>
+        document.getElementById("propertyForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+
+            const response = await fetch("/api/properties", {
+                method: POST,
+                body: formData
+            });
+
+            if (response.ok) {
+                window.location.href = "pending.html"
+            } else {
+                alert("Error submitting property");
+            }
+        });
+    </script>
+</body>
+</html>

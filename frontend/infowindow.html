@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info Window</title>
+    <style>
+        .info-window {
+            border: 1px solid #ccc;
+            padding: 12px;
+            border-radius: 8px;
+            width: 300px;
+        }
+        .infow-window img {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+        .property.details h3 {
+            margin: 10px 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Featured Property</h1>
+    <div id="property-container"></div>
+
+    <script>
+        const property = localStorage.getItem('submittedProperty');
+        if(propertyData) {
+            const property = JSON.parse(propertyData);
+        
+            const infoWindowHTML = `
+                <div class="info-window">
+                    <img src="${property.image}" alt="House Image"
+                    <div class="property-details">
+                        <h3>${property.price}</h3>
+                        <p>${property.beds} Beds • ${property.baths} Baths • ${property.sqft} sqft</p>
+                        <p>${property.address}</p>
+                    </div>
+                </div>
+        `};
+
+        document.getElementsById('property-container').innerHTML = infoWindowHTML;
+    </script>
+</body>
+</html>

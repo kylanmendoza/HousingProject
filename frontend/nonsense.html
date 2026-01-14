@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Housing Project Map - Connected</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            min-width: 250px;
+            max-width: 300px;
+        }
+        
+        .controls h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        
+        .controls button {
+            width: 100%;
+            margin: 5px 0;
+            padding: 10px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .controls button:hover {
+            background: #3367d6;
+        }
+        
+        .controls button.secondary {
+            background: #34a853;
+        }
+        
+        .controls button.secondary:hover {
+            background: #137333;
+        }
+        
+        .status {
+            font-size: 12px;
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .property-count {
+            font-weight: bold;
+            color: #333;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 2000;
+            display: none;
+        }
+        
+        /* Custom marker styles */
+        .custom-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+        
+        .marker-approved {
+            background: #34a853;
+        }
+        
+        .marker-unapproved {
+            background: #ea4335;
+        }
+        
+        /* Info window styling */
+        .info-window {
+            max-width: 300px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .info-window h3 {
+            margin: 0 0 10px 0;
+            color: #1a73e8;
+            font-size: 18px;
+        }
+        
+        .info-window .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #34a853;
+            margin-bottom: 10px;
+        }
+        
+        .info-window .details {
+            line-height: 1.4;
+            color: #5f6368;
+        }
+        
+        .info-window .status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        
+        .status-approved {
+            background: #e8f5e8;
+            color: #137333;
+        }
+        
+        .status-unapproved {
+            background: #fce8e6;
+            color: #d93025;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="controls">
+        <h3>🏠 Housing Project Map</h3>
+        <button onclick="refreshProperties()">🔄 Refresh Map</button>
+        <button onclick="showApproved()" class="secondary">✅ Show Approved</button>
+        <button onclick="showUnapproved()">⏳ Show Pending</button>
+        <button onclick="showAll()">🌍 Show All</button>
+        <div id="property-count" class="property-count">Loading properties...</div>
+        <div id="status" class="status"></div>
+    </div>
+    
+    <div id="loading" class="loading">
+        <div>Loading properties...</div>
+    </div>
+
+    <script>
+        // Configuration - Update this to match your server
+        const API_BASE_URL = 'http://localhost:5000'; // Your server URL
+        let map;
+        let markers = [];
+        let currentView = 'approved'; // 'approved', 'unapproved', or 'all'
+        
+        // Initialize Google Map
+        function initMap() {
+            // Center on Bozeman, MT
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: { lat: 45.6793, lng: -111.0373 },
+                mapId: 'DEMO_MAP_ID',
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+            
+            // Load initial properties
+            loadProperties();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                if (currentView !== 'manual') {
+                    loadProperties();
+                }
+            }, 30000);
+        }
+        
+        // Load properties from server
+        async function loadProperties() {
+            try {
+                showLoading(true);
+                let endpoint = '/properties';
+                
+                if (currentView === 'unapproved') {
+                    endpoint = '/properties/unapproved';
+                } else if (currentView === 'all') {
+                    // Load both approved and unapproved
+                    await Promise.all([
+                        loadPropertiesFromEndpoint('/properties'),
+                        loadPropertiesFromEndpoint('/properties/unapproved')
+                    ]);
+                    showLoading(false);
+                    return;
+                }
+                
+                await loadPropertiesFromEndpoint(endpoint);
+            } catch (error) {
+                console.error('Error loading properties:', error);
+                updateStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Load properties from specific endpoint
+        async function loadPropertiesFromEndpoint(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (currentView === 'all' && endpoint === '/properties/unapproved') {
+                        // Append unapproved properties to existing markers
+                        displayProperties(data.data, false); // false = don't clear existing
+                    } else {
+                        displayProperties(data.data, true); // true = clear existing
+                        updatePropertyCount(data.count);
+                    }
+                    
+                    updateStatus(`Loaded ${data.count} properties`, 'success');
+                } else {
+                    throw new Error(data.message || 'Failed to load properties');
+                }
+            } catch (error) {
+                throw error;
+            }
+        }
+        
+        // Display properties on map
+        function displayProperties(properties, clearExisting = true) {
+            // Clear existing markers if requested
+            if (clearExisting) {
+                markers.forEach(marker => {
+                    marker.setMap(null);
+                });
+                markers = [];
+            }
+            
+            // Add new markers
+            properties.forEach(property => {
+                if (property.location && property.location.coordinates) {
+                    const [lng, lat] = property.location.coordinates;
+                    
+                    // Create marker
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
+                        position: { lat, lng },
+                        map: map,
+                        title: `$${property.rent}/month - ${property.address.fullAddress || property.address}`,
+                        content: createMarkerElement(property.approved)
+                    });
+                    
+                    // Create info window
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: createInfoWindowContent(property)
+                    });
+                    
+                    // Add click listener
+                    marker.addListener('click', () => {
+                        // Close other info windows
+                        markers.forEach(m => {
+                            if (m.infoWindow) {
+                                m.infoWindow.close();
+                            }
+                        });
+                        
+                        infoWindow.open(map, marker);
+                    });
+                    
+                    marker.infoWindow = infoWindow;
+                    markers.push(marker);
+                }
+            });
+            
+            // Update total count if showing all
+            if (currentView === 'all') {
+                updatePropertyCount(markers.length);
+            }
+        }
+        
+        // Create custom marker element
+        function createMarkerElement(approved) {
+            const markerElement = document.createElement('div');
+            markerElement.className = `custom-marker ${approved ? 'marker-approved' : 'marker-unapproved'}`;
+            return markerElement;
+        }
+        
+        // Create info window content
+        function createInfoWindowContent(property) {
+            const address = property.address.fullAddress || property.address.street || property.address;
+            const statusClass = property.approved ? 'status-approved' : 'status-unapproved';
+            const statusText = property.approved ? 'Approved' : 'Pending Approval';
+            
+            return `
+                <div class="info-window">
+                    <div class="price">$${property.rent}/month</div>
+                    <h3>📍 ${address}</h3>
+                    <div class="details">
+                        <strong>🛏️ Bedrooms:</strong> ${property.bedrooms}<br>
+                        <strong>🚿 Bathrooms:</strong> ${property.bathrooms}<br>
+                        ${property.squareFootage ? `<strong>📐 Square Feet:</strong> ${property.squareFootage}<br>` : ''}
+                        ${property.unitNumber ? `<strong>🏢 Unit:</strong> ${property.unitNumber}<br>` : ''}
+                        ${property.landlord && property.landlord.name ? `<strong>👤 Contact:</strong> ${property.landlord.name}<br>` : ''}
+                        ${property.landlord && property.landlord.phone ? `<strong>📞 Phone:</strong> ${property.landlord.phone}<br>` : ''}
+                    </div>
+                    <div class="status ${statusClass}">${statusText}</div>
+                </div>
+            `;
+        }
+        
+        // Control functions
+        function refreshProperties() {
+            currentView = 'manual';
+            loadProperties();
+            setTimeout(() => { currentView = 'approved'; }, 1000);
+        }
+        
+        function showApproved() {
+            currentView = 'approved';
+            loadProperties();
+        }
+        
+        function showUnapproved() {
+            currentView = 'unapproved';
+            loadProperties();
+        }
+        
+        function showAll() {
+            currentView = 'all';
+            loadProperties();
+        }
+        
+        // Utility functions
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            
+            // Clear status after 5 seconds
+            setTimeout(() => {
+                statusEl.textContent = '';
+                statusEl.className = 'status';
+            }, 5000);
+        }
+        
+        function updatePropertyCount(count) {
+            const viewText = currentView === 'all' ? 'total' : currentView;
+            document.getElementById('property-count').textContent = 
+                `${count} ${viewText} properties`;
+        }
+        
+        // Make initMap globally available
+        window.initMap = initMap;
+    </script>
+    
+    <!-- Google Maps API -->
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7LjDw6VblBQwXbmdpdQKVogUzfPA9auU&libraries=maps,marker&v=beta&callback=initMap"
+        defer>
+    </script>
+</body>
+</html>
