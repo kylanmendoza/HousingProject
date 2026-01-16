@@ -1,0 +1,51 @@
+<html>
+  <head>
+    <title>Add a Map with Markers using HTML</title>
+
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script type="module" src="./index.js"></script>
+  </head>
+  <body>
+    <gmp-map
+      center="45.6793,-111.0373"
+      zoom="12"
+      map-id="DEMO_MAP_ID"
+      style="height: 1200px"
+    >
+      <gmp-advanced-marker
+        position="45.6700322,-111.0196337"
+        title="Bozeman Deaconess Hospital - Bozeman, MT"
+        class="marker"
+      ></gmp-advanced-marker>
+      <gmp-advanced-marker
+        position="45.6917077,-111.1006895"
+        title="Gallatin High School - Bozeman, MT"
+        class="marker"
+      ></gmp-advanced-marker>
+    </gmp-map>
+
+    <!-- 
+      The `defer` attribute causes the script to execute after the full HTML
+      document has been parsed. For non-blocking uses, avoiding race conditions,
+      and consistent behavior across browsers, consider loading using Promises. See
+      https://developers.google.com/maps/documentation/javascript/load-maps-js-api
+      for more information.
+      -->
+    <script>
+      const infoWindow = documentGetElementByID('.marker');
+
+      infoWindow = `
+        <div class="info-window">
+          <h3>${property.price}</h3>
+          <p>${property.beds} Beds • ${property.baths} Baths</p>
+          <p>${property.address}</p>
+        </div>
+        `
+    </script>
+    <script>
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD7LjDw6VblBQwXbmdpdQKVogUzfPA9auU&libraries=maps,marker&v=beta"
+      defer
+    </script>
+    <script src="server.js"></script>
+  </body>
+</html>
