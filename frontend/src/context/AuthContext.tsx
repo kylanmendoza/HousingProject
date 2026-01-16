@@ -37,7 +37,6 @@ const MOCK_EMPLOYEE_USER: User = {
 const MOCK_ADMIN_USER: User = {
   id: 'test-admin-123',
   name: 'Admin User', 
-  // Can change to 'MOCK_EMPLOYEE_USER' or 'Admin User' @ ln39
   email: 'admin@bozemanhealth.org',
   role: 'admin',
   employeeId: 'ADMIN001',
@@ -57,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // TESTING MODE: Automatically log in with mock user
       if (TESTING_MODE) {
         // Use admin for testing admin features
-        const testUser = MOCK_ADMIN_USER; // Change to MOCK_EMPLOYEE_USER for regular user testing
+        const testUser = MOCK_ADMIN_USER; // Change to MOCK_EMPLOYEE_USER for regular user testing OR change to MOCK_ADMIN_USER for admin testing
         console.log(`🧪 TESTING MODE ENABLED - Auto-logged in as ${testUser.role}`);
         setUser(testUser);
         setIsLoading(false);
