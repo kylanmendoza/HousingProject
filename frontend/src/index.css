@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Enable dark mode with class strategy */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Base styles */
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* Smooth transition for theme changes */
+html {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* Dark mode body background */
+html.dark {
+  background-color: #111827;
+}
+
+/* Map InfoWindow dark mode override */
+.dark .gm-style-iw,
+.dark .gm-style-iw-c {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+.dark .gm-style-iw-d {
+  background-color: #1f2937 !important;
+}
+
+.dark .gm-style-iw-tc::after {
+  background: #1f2937 !important;
+}
+
+.dark .gm-ui-hover-effect > span {
+  background-color: #f3f4f6 !important;
+}
